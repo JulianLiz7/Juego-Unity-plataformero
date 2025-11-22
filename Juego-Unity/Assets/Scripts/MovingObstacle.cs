@@ -3,35 +3,56 @@ using UnityEngine;
 public class MovingObstacle : MonoBehaviour
 {
     [Header("Puntos de Movimiento")]
-    public Transform upperPoint;   // Punto superior
-    public Transform lowerPoint;   // Punto inferior
+    public Transform upperPoint;
+    public Transform lowerPoint;
 
     [Header("Ajustes")]
-    public float speed = 2f;       // Velocidad
+    public float speed = 2f;
     public bool startAtTop = false;
 
     private Vector3 targetPos;
+    private GameObject playerOnPlatform;
+    private Vector3 lastPlayerPosition;
 
     void Start()
     {
-        // Elige dónde comenzar
         targetPos = startAtTop ? lowerPoint.position : upperPoint.position;
     }
 
     void Update()
     {
-        // Mover hacia el objetivo
+        // Mover plataforma
         transform.position = Vector3.MoveTowards(transform.position, targetPos, speed * Time.deltaTime);
 
-        // Si llega al objetivo, cambiar dirección
+        // Cambiar dirección
         if (Vector3.Distance(transform.position, targetPos) < 0.05f)
         {
-            // Cambiar entre upper y lower
             targetPos = targetPos == upperPoint.position ? lowerPoint.position : upperPoint.position;
         }
     }
 
-    // Vista en editor de los puntos
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player") && playerOnPlatform == null)
+        {
+            playerOnPlatform = other.gameObject;
+            // Hacer al jugador hijo de la plataforma
+            playerOnPlatform.transform.SetParent(transform);
+            Debug.Log("Jugador pegado a la plataforma (Parenting)");
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.CompareTag("Player") && playerOnPlatform == other.gameObject)
+        {
+            // Quitar parentesco
+            playerOnPlatform.transform.SetParent(null);
+            playerOnPlatform = null;
+            Debug.Log("Jugador liberado de la plataforma");
+        }
+    }
+
     void OnDrawGizmos()
     {
         if (upperPoint != null && lowerPoint != null)
