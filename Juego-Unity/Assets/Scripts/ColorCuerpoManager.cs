@@ -37,6 +37,7 @@ public class ColorCuerpoManager : MonoBehaviour
     public Color aguaColor = new Color(0f, 0.5f, 1f); // Azul agua
     public Color tierraColor = new Color(0.6f, 0.4f, 0.2f); // Marrón
     public Color aireColor = Color.white;
+    public Color colorOjos = Color.black; // ✅ Nuevo color para ojos
 
     private int nivelColor = 0;
 
@@ -100,8 +101,10 @@ public class ColorCuerpoManager : MonoBehaviour
         Pintar(corazon, aireColor);
         Pintar(cara, aireColor);
         Pintar(cabello, aireColor);
-        Pintar(ojoDer, aireColor);
-        Pintar(ojoIzq, aireColor);
+        
+        // ✅ OJOS EN NEGRO (no se pintan del color aire)
+        Pintar(ojoDer, colorOjos);
+        Pintar(ojoIzq, colorOjos);
     }
 
     private void Pintar(Renderer rend, Color color)
@@ -118,6 +121,7 @@ public class ColorCuerpoManager : MonoBehaviour
                 if (color == aguaColor) intensidad = 0.4f;
                 if (color == tierraColor) intensidad = 0.2f;
                 if (color == aireColor) intensidad = 0.8f;
+                if (color == colorOjos) intensidad = 0f; // ✅ Ojos sin brillo
                 
                 mat.SetColor("_EmissionColor", color * intensidad);
             }
