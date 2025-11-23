@@ -21,6 +21,13 @@ public class GameManager : MonoBehaviour
     public float tiempoMensajeActivado = 3f;
     public bool mostrarMensajes = true;
     
+    [Header("Configuración de Iluminación")]
+    public Light luzDireccional;
+    public Color colorLuzDiurna = Color.white;
+    public Color colorLuzNocturna = new Color(0.1f, 0.1f, 0.3f);
+    public float intensidadDiurna = 1f;
+    public float intensidadNocturna = 0.1f;
+    
     [Header("Estado del Juego")]
     public int mundoActual = 0;
     public int objetosRecolectados = 0;
@@ -34,8 +41,31 @@ public class GameManager : MonoBehaviour
             colorManager.IniciarNuevaPartida();
         }
 
+        // ✅ BUSCAR LUZ DIRECCIONAL AUTOMÁTICAMENTE
+        if (luzDireccional == null)
+        {
+            Light[] todasLasLuces = FindObjectsOfType<Light>();
+            foreach (Light luz in todasLasLuces)
+            {
+                if (luz.type == LightType.Directional)
+                {
+                    luzDireccional = luz;
+                    Debug.Log("✅ Luz direccional encontrada automáticamente: " + luz.name);
+                    break;
+                }
+            }
+            
+            if (luzDireccional == null)
+            {
+                Debug.LogWarning("⚠️ No se encontró luz direccional en la escena");
+            }
+        }
+
         AsegurarTextoOculto();
         InicializarMundosSecuenciales();
+        
+        // ✅ ASEGURAR ILUMINACIÓN DIURNA AL INICIO
+        ConfigurarIluminacionDiurna();
         
         Debug.Log("🎮 GAME MANAGER INICIADO - NUEVA PARTIDA");
     }
@@ -184,7 +214,7 @@ public class GameManager : MonoBehaviour
         // ✅ DETECTAR SI ES EL ÚLTIMO MUNDO
         bool esUltimoMundo = (numeroMundo == mundos.Length - 1);
 
-        // ✅ CONFIGURACIÓN ESPECIAL PARA EL ÚLTIMO MUNDO - CORREGIDO
+        // ✅ CONFIGURACIÓN ESPECIAL PARA EL ÚLTIMO MUNDO
         if (esUltimoMundo)
         {
             Debug.Log("🎯 ES EL ÚLTIMO MUNDO - Mostrando mensaje FINAL");
@@ -323,6 +353,45 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // ✅ MÉTODOS DE ILUMINACIÓN (AHORA PÚBLICOS)
+    public void CambiarIluminacion(bool esNoche)
+    {
+        if (esNoche)
+        {
+            ConfigurarIluminacionNocturna();
+        }
+        else
+        {
+            ConfigurarIluminacionDiurna();
+        }
+    }
+
+    private void ConfigurarIluminacionNocturna()
+    {
+        if (luzDireccional != null)
+        {
+            luzDireccional.color = colorLuzNocturna;
+            luzDireccional.intensity = intensidadNocturna;
+            luzDireccional.transform.rotation = Quaternion.Euler(-90f, 0f, 0f);
+            Debug.Log("🌙 Iluminación cambiada a modo NOCHE");
+        }
+        else
+        {
+            Debug.LogWarning("⚠️ No hay luz direccional asignada para cambiar a modo noche");
+        }
+    }
+
+    private void ConfigurarIluminacionDiurna()
+    {
+        if (luzDireccional != null)
+        {
+            luzDireccional.color = colorLuzDiurna;
+            luzDireccional.intensity = intensidadDiurna;
+            luzDireccional.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
+            Debug.Log("☀️ Iluminación cambiada a modo DÍA");
+        }
+    }
+
     // MÉTODO PARA ACTUALIZAR EL RESPAWN DEL JUGADOR
     public void ActualizarRespawnJugador(int numeroMundo)
     {
@@ -449,6 +518,19 @@ public class GameManager : MonoBehaviour
             if (Input.GetKey(KeyCode.Alpha2)) TeletransportarAMundo(1);
             if (Input.GetKey(KeyCode.Alpha3)) TeletransportarAMundo(2);
             if (Input.GetKey(KeyCode.Alpha4)) TeletransportarAMundo(3);
+        }
+
+        // Comando para probar iluminación
+        if (Input.GetKeyDown(KeyCode.L))
+        {
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                ConfigurarIluminacionNocturna();
+            }
+            else
+            {
+                ConfigurarIluminacionDiurna();
+            }
         }
         
         // Verificar estado actual
