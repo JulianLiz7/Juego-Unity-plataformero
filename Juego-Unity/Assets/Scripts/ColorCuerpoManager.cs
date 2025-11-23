@@ -37,7 +37,7 @@ public class ColorCuerpoManager : MonoBehaviour
     public Color aguaColor = new Color(0f, 0.5f, 1f); // Azul agua
     public Color tierraColor = new Color(0.6f, 0.4f, 0.2f); // Marrón
     public Color aireColor = Color.white;
-    public Color colorOjos = Color.black; // ✅ Nuevo color para ojos
+    public Color colorOjos = Color.black; // Color negro para los ojos
 
     private int nivelColor = 0;
 
