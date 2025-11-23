@@ -16,25 +16,29 @@ public class GameManager : MonoBehaviour
     [Header("Configuración Secuencial")]
     public bool sistemaSecuencial = true;
     
-    [Header("Estado del Juego")]
-    public int mundoActual = 0; // ✅ AHORA ES PÚBLICO
+    [Header("Configuración de Mensajes")]
+    public float tiempoMensajeRecolectado = 3f;
+    public float tiempoMensajeActivado = 3f;
+    public bool mostrarMensajes = true;
     
+    [Header("Estado del Juego")]
+    public int mundoActual = 0;
     public int objetosRecolectados = 0;
     
-   private void Start()
-{
-    // ✅ RESETEAR COLOR MANAGER al iniciar nueva partida
-    ColorCuerpoManager colorManager = FindObjectOfType<ColorCuerpoManager>();
-    if (colorManager != null)
+    private void Start()
     {
-        colorManager.IniciarNuevaPartida();
-    }
+        // ✅ RESETEAR COLOR MANAGER al iniciar nueva partida
+        ColorCuerpoManager colorManager = FindObjectOfType<ColorCuerpoManager>();
+        if (colorManager != null)
+        {
+            colorManager.IniciarNuevaPartida();
+        }
 
-    AsegurarTextoOculto();
-    InicializarMundosSecuenciales();
-    
-    Debug.Log("🎮 GAME MANAGER INICIADO - NUEVA PARTIDA");
-}
+        AsegurarTextoOculto();
+        InicializarMundosSecuenciales();
+        
+        Debug.Log("🎮 GAME MANAGER INICIADO - NUEVA PARTIDA");
+    }
     
     private void AsegurarTextoOculto()
     {
@@ -120,8 +124,20 @@ public class GameManager : MonoBehaviour
 
     IEnumerator ProcesarRecoleccion(int numeroMundo)
     {
-        objetosRecolectados++;
         MundoData mundoRecolectado = mundos[numeroMundo];
+        
+        // ✅ VERIFICAR SI SE DEBE CONTAR EN EL CONTADOR
+        bool contarEnEstadisticas = mundoRecolectado.contarEnEstadisticas;
+        
+        if (contarEnEstadisticas)
+        {
+            objetosRecolectados++;
+            Debug.Log($"🔢 Contador incrementado: {objetosRecolectados} objetos");
+        }
+        else
+        {
+            Debug.Log($"🔢 Objeto NO contado en estadísticas: {mundoRecolectado.nombreMundo}");
+        }
 
         // DEBUG INICIAL
         Debug.Log($"🎮 INICIANDO RECOLECCIÓN MUNDO {numeroMundo}");
@@ -146,43 +162,112 @@ public class GameManager : MonoBehaviour
             Debug.Log($"🌉 Puente {numeroMundo} activado: {mundoRecolectado.puente.name}");
         }
 
-        // ✅ ACTUALIZAR RESPAWN - ESTO ES LO MÁS IMPORTANTE
+        // ✅ ACTUALIZAR RESPAWN
         Debug.Log($"🔄 ACTUALIZANDO RESPAWN AL MUNDO {numeroMundo}");
         ActualizarRespawnJugador(numeroMundo);
 
-        // ACTIVAR COLOR
-        if (colorManager != null)
+        // ACTIVAR COLOR (solo si se cuenta en estadísticas)
+        if (colorManager != null && contarEnEstadisticas)
         {
             colorManager.AvanzarNivelColor();
             Debug.Log($"🎨 Color avanzado a nivel: {colorManager.GetNivelColorActual()}");
+        }
+        else if (colorManager != null && !contarEnEstadisticas)
+        {
+            Debug.Log("🎨 Color NO avanzado - Objeto no cuenta en estadísticas");
         }
         else
         {
             Debug.LogError("❌ ColorManager no asignado en GameManager");
         }
 
-        // MENSAJES UI
-        if (mensajeText != null)
+        // ✅ DETECTAR SI ES EL ÚLTIMO MUNDO
+        bool esUltimoMundo = (numeroMundo == mundos.Length - 1);
+
+        // ✅ CONFIGURACIÓN ESPECIAL PARA EL ÚLTIMO MUNDO - CORREGIDO
+        if (esUltimoMundo)
         {
-            // Usar mensajes personalizados por mundo si están definidos, de lo contrario usar mensajes por defecto
-            string mensaje1 = !string.IsNullOrEmpty(mundos[numeroMundo].mensajeRecolectado) ? mundos[numeroMundo].mensajeRecolectado : $"Objeto {numeroMundo + 1} recolectado";
+            Debug.Log("🎯 ES EL ÚLTIMO MUNDO - Mostrando mensaje FINAL");
+            
+            // ✅ MOSTRAR MENSAJE FINAL ANTES DEL TELETRANSPORTE
+            if (mensajeText != null)
+            {
+                string mensajeFinal = "¡VOLVISTE A CONSEGUIR TU ALMA, FIN!";
+                mensajeText.text = mensajeFinal;
+                mensajeText.gameObject.SetActive(true);
+                Debug.Log($"📱 UI MOSTRANDO MENSAJE FINAL: {mensajeFinal}");
+                
+                // Esperar un tiempo para que se vea el mensaje "Fin"
+                yield return new WaitForSeconds(3f);
+                
+                // Ocultar el mensaje después del tiempo
+                AsegurarTextoOculto();
+                Debug.Log("📱 Mensaje FINAL ocultado");
+            }
+            
+            // ✅ TELETRANSPORTE DESPUÉS DEL MENSAJE
+            if (mundoRecolectado.puntoTeletransporte != null)
+            {
+                Debug.Log($"🚀 TELETRANSPORTE FINAL a: {mundoRecolectado.puntoTeletransporte.name}");
+                EjecutarTeletransporteInmediato(mundoRecolectado.puntoTeletransporte);
+            }
+            
+            Debug.Log($"✅ ÚLTIMA RECOLECCIÓN COMPLETADA - Mundo {numeroMundo}");
+            yield break; // Salir de la corutina
+        }
+
+        // ✅ CONFIGURACIÓN NORMAL PARA MUNDOS QUE NO SON EL ÚLTIMO
+        float tiempoRecolectado = mundoRecolectado.tiempoMensajeRecolectado > 0 ? 
+            mundoRecolectado.tiempoMensajeRecolectado : tiempoMensajeRecolectado;
+            
+        float tiempoActivado = mundoRecolectado.tiempoMensajeActivado > 0 ? 
+            mundoRecolectado.tiempoMensajeActivado : tiempoMensajeActivado;
+
+        bool mostrarMensajesMundo = mundoRecolectado.mostrarMensajes;
+
+        // ✅ MENSAJES UI (SOLO PARA MUNDOS QUE NO SON EL ÚLTIMO)
+        if (mensajeText != null && mostrarMensajesMundo)
+        {
+            // Primer mensaje
+            string mensaje1 = !string.IsNullOrEmpty(mundos[numeroMundo].mensajeRecolectado) ? 
+                mundos[numeroMundo].mensajeRecolectado : $"Objeto {numeroMundo + 1} recolectado";
+            
             mensajeText.text = mensaje1;
             mensajeText.gameObject.SetActive(true);
-            Debug.Log($"📱 UI: {mensaje1}");
-        }
-        
-        yield return new WaitForSeconds(3f);
-        
-        if (mensajeText != null)
-        {
-            string mensaje2 = !string.IsNullOrEmpty(mundos[numeroMundo].mensajeActivado) ? mundos[numeroMundo].mensajeActivado : $"Mundo {numeroMundo + 1} activado";
+            Debug.Log($"📱 UI: {mensaje1} (Tiempo: {tiempoRecolectado}s)");
+
+            if (tiempoRecolectado > 0)
+            {
+                yield return new WaitForSeconds(tiempoRecolectado);
+            }
+            else
+            {
+                yield return null;
+            }
+
+            // Segundo mensaje
+            string mensaje2 = !string.IsNullOrEmpty(mundos[numeroMundo].mensajeActivado) ? 
+                mundos[numeroMundo].mensajeActivado : $"Mundo {numeroMundo + 1} activado";
+            
             mensajeText.text = mensaje2;
-            Debug.Log($"📱 UI: {mensaje2}");
+            Debug.Log($"📱 UI: {mensaje2} (Tiempo: {tiempoActivado}s)");
+
+            if (tiempoActivado > 0)
+            {
+                yield return new WaitForSeconds(tiempoActivado);
+            }
+            else
+            {
+                yield return null;
+            }
+        }
+        else
+        {
+            Debug.Log("📱 Mensajes desactivados para este mundo");
+            yield return new WaitForSeconds(0.1f);
         }
         
-        yield return new WaitForSeconds(3f);
-        
-        // ACTIVAR SIGUIENTE RECOLECTABLE
+        // ACTIVAR SIGUIENTE RECOLECTABLE (solo si no es el último)
         if (sistemaSecuencial && numeroMundo < mundos.Length - 1)
         {
             mundoActual = numeroMundo + 1;
@@ -195,35 +280,47 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // TELETRANSPORTE INMEDIATO
-        if (mundoRecolectado.puntoTeletransporte != null)
+        // ✅ TELETRANSPORTE INMEDIATO PARA MUNDOS QUE NO SON EL ÚLTIMO
+        bool teletransportarInmediato = mundoRecolectado.teletransporteInmediato;
+
+        if (mundoRecolectado.puntoTeletransporte != null && teletransportarInmediato)
         {
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null)
-            {
-                PlayerRespawn playerRespawn = player.GetComponent<PlayerRespawn>();
-                if (playerRespawn != null)
-                {
-                    Debug.Log($"🚀 Teletransportando al nuevo respawn: {mundoRecolectado.puntoTeletransporte.name}");
-                    playerRespawn.TeletransportarAlInicio(mundoRecolectado.puntoTeletransporte);
-                }
-                else
-                {
-                    Debug.LogError("❌ No se encontró PlayerRespawn en el jugador");
-                }
-            }
-            else
-            {
-                Debug.LogError("❌ No se encontró el jugador en la escena");
-            }
+            Debug.Log($"🚀 EJECUTANDO TELETRANSPORTE INMEDIATO al mundo {numeroMundo}");
+            EjecutarTeletransporteInmediato(mundoRecolectado.puntoTeletransporte);
         }
-        else
+        else if (mundoRecolectado.puntoTeletransporte != null)
         {
-            Debug.LogWarning("⚠️ No hay punto de teletransporte asignado para este mundo");
+            Debug.Log("📍 Punto de teletransporte disponible, pero teletransporte inmediato desactivado");
         }
         
         AsegurarTextoOculto();
         Debug.Log($"✅ RECOLECCIÓN MUNDO {numeroMundo} COMPLETADA");
+    }
+
+    // ✅ MÉTODO PARA TELETRANSPORTE INMEDIATO
+    private void EjecutarTeletransporteInmediato(Transform puntoDestino)
+    {
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            PlayerRespawn playerRespawn = player.GetComponent<PlayerRespawn>();
+            if (playerRespawn != null)
+            {
+                Debug.Log($"🚀 Teletransportando inmediatamente a: {puntoDestino.name}");
+                playerRespawn.TeletransportarAlInicio(puntoDestino);
+            }
+            else
+            {
+                Debug.LogError("❌ No se encontró PlayerRespawn en el jugador");
+                // Fallback: teletransporte directo
+                player.transform.position = puntoDestino.position;
+                player.transform.rotation = puntoDestino.rotation;
+            }
+        }
+        else
+        {
+            Debug.LogError("❌ No se encontró el jugador en la escena");
+        }
     }
 
     // MÉTODO PARA ACTUALIZAR EL RESPAWN DEL JUGADOR
@@ -247,20 +344,40 @@ public class GameManager : MonoBehaviour
             }
 
             PlayerRespawn playerRespawn = player.GetComponent<PlayerRespawn>();
-            if (playerRespawn == null)
+            if (playerRespawn != null)
+            {
+                playerRespawn.SetRespawnPoint(mundos[numeroMundo].puntoTeletransporte);
+                Debug.Log($"✅ RESPAWN ACTUALIZADO: Mundo {numeroMundo} -> {mundos[numeroMundo].puntoTeletransporte.name}");
+            }
+            else
             {
                 Debug.LogError("❌ ERROR: El jugador no tiene componente PlayerRespawn");
-                return;
             }
-
-            // ✅ ESTA ES LA LÍNEA CRÍTICA QUE ACTUALIZA EL RESPAWN
-            playerRespawn.SetRespawnPoint(mundos[numeroMundo].puntoTeletransporte);
-            Debug.Log($"✅ RESPAWN ACTUALIZADO: Mundo {numeroMundo} -> {mundos[numeroMundo].puntoTeletransporte.name} en posición {mundos[numeroMundo].puntoTeletransporte.position}");
         }
         else
         {
             Debug.LogError($"❌ Número de mundo inválido: {numeroMundo}");
         }
+    }
+
+    // ✅ MÉTODO PARA OBTENER EL CONTADOR REAL (solo objetos que cuentan)
+    public int GetObjetosRecolectadosReales()
+    {
+        return objetosRecolectados;
+    }
+
+    // ✅ MÉTODO PARA OBTENER EL TOTAL DE OBJETOS QUE CUENTAN
+    public int GetTotalObjetosQueCuentan()
+    {
+        int total = 0;
+        foreach (MundoData mundo in mundos)
+        {
+            if (mundo.contarEnEstadisticas)
+            {
+                total++;
+            }
+        }
+        return total;
     }
 
     // Método para forzar activación de un mundo (para testing)
@@ -279,6 +396,24 @@ public class GameManager : MonoBehaviour
             
             // Actualizar respawn también
             ActualizarRespawnJugador(numeroMundo);
+        }
+    }
+
+    // ✅ MÉTODO PARA TELETRANSPORTE MANUAL DESDE OTROS SCRIPTS
+    public void TeletransportarAMundo(int numeroMundo)
+    {
+        if (numeroMundo >= 0 && numeroMundo < mundos.Length)
+        {
+            Debug.Log($"🚀 TELETRANSPORTE MANUAL al mundo {numeroMundo}");
+            
+            // Actualizar respawn primero
+            ActualizarRespawnJugador(numeroMundo);
+            
+            // Ejecutar teletransporte inmediato
+            if (mundos[numeroMundo].puntoTeletransporte != null)
+            {
+                EjecutarTeletransporteInmediato(mundos[numeroMundo].puntoTeletransporte);
+            }
         }
     }
 
@@ -307,15 +442,25 @@ public class GameManager : MonoBehaviour
             ForzarActivacionMundo(3);
         }
         
+        // Teletransporte rápido con T + número
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            if (Input.GetKey(KeyCode.Alpha1)) TeletransportarAMundo(0);
+            if (Input.GetKey(KeyCode.Alpha2)) TeletransportarAMundo(1);
+            if (Input.GetKey(KeyCode.Alpha3)) TeletransportarAMundo(2);
+            if (Input.GetKey(KeyCode.Alpha4)) TeletransportarAMundo(3);
+        }
+        
         // Verificar estado actual
         if (Input.GetKeyDown(KeyCode.Space))
         {
             Debug.Log($"📊 ESTADO ACTUAL - Mundo: {mundoActual}, Objetos: {objetosRecolectados}");
+            Debug.Log($"📊 OBJETOS QUE CUENTAN: {GetObjetosRecolectadosReales()}/{GetTotalObjetosQueCuentan()}");
         }
     }
 }
 
-// CLASE PARA ORGANIZAR LOS DATOS DE CADA MUNDO
+// ✅ CLASE MUNDODATA - VA AL FINAL DEL MISMO ARCHIVO
 [System.Serializable]
 public class MundoData
 {
@@ -331,4 +476,15 @@ public class MundoData
     public string mensajeRecolectado;  // Mensaje al recolectar el objeto de este mundo
     [TextArea]
     public string mensajeActivado;      // Mensaje al activar este mundo
+    
+    [Header("Tiempos de Mensaje")]
+    public float tiempoMensajeRecolectado = 0f; // 0 = usar valor global
+    public float tiempoMensajeActivado = 0f;    // 0 = usar valor global
+    public bool mostrarMensajes = true;         // Mostrar mensajes para este mundo
+    
+    [Header("Teletransporte")]
+    public bool teletransporteInmediato = true; // Teletransportar inmediatamente después de recolectar
+    
+    [Header("Estadísticas")]
+    public bool contarEnEstadisticas = true;    // ✅ Si este objeto se cuenta en el contador
 }

@@ -80,4 +80,10 @@ public class FreeLookCamera : MonoBehaviour
 
         transform.LookAt(target.position + Vector3.up * height * 0.8f);
     }
+    // En FreeLookCamera.cs, agrega este método:
+public void SetTarget(Transform newTarget)
+{
+    target = newTarget;
+}
+
 }

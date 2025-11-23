@@ -121,25 +121,40 @@ public class UIManager : MonoBehaviour
     {
         if (gameManager == null) return;
 
-        // Obtener objetos recolectados (necesitamos hacer público este valor en GameManager)
-        int objetosRecolectados = GetObjetosRecolectados();
+        // ✅ CORREGIDO: Usar los métodos que filtran solo objetos que cuentan
+        int objetosRecolectados = gameManager.GetObjetosRecolectadosReales();
+        int totalObjetosQueCuentan = gameManager.GetTotalObjetosQueCuentan();
+
+        // ✅ NUEVO: Ocultar completamente la UI de objetos si no hay objetos que contar
+        bool mostrarUIObjetos = totalObjetosQueCuentan > 0;
 
         if (objetosText != null)
         {
-            objetosText.text = $"Objetos: {objetosRecolectados}";
+            objetosText.gameObject.SetActive(mostrarUIObjetos);
+            if (mostrarUIObjetos)
+            {
+                objetosText.text = $"Objetos: {objetosRecolectados}";
+            }
         }
 
         if (objetosTotalText != null)
         {
-            objetosTotalText.text = $"{objetosRecolectados}/{gameManager.mundos.Length}";
+            objetosTotalText.gameObject.SetActive(mostrarUIObjetos);
+            if (mostrarUIObjetos)
+            {
+                objetosTotalText.text = $"{objetosRecolectados}/{totalObjetosQueCuentan}";
+            }
+        }
+
+        // ✅ DEBUG: Mostrar información en consola para verificar
+        if (Input.GetKeyDown(KeyCode.P)) // Presiona P para debug
+        {
+            Debug.Log($"📊 UI - Objetos recolectados: {objetosRecolectados}, Total que cuentan: {totalObjetosQueCuentan}, Mostrar UI: {mostrarUIObjetos}");
         }
     }
 
-    private int GetObjetosRecolectados()
-    {
-        // Necesitamos acceder a los objetos recolectados del GameManager
-        return gameManager.objetosRecolectados;
-    }
+    // ✅ ELIMINADO: Ya no necesitamos este método porque usamos los del GameManager
+    // private int GetObjetosRecolectados()
 
     private void Update()
     {
@@ -154,64 +169,113 @@ public class UIManager : MonoBehaviour
                 playerVidas.PerderVida();
             }
         }
-    }
-    private void ActualizarCorazones()
-{
-    if (playerVidas == null || corazones == null) return;
 
-    for (int i = 0; i < corazones.Length; i++)
-    {
-        if (corazones[i] != null)
+        // Comando de testing para debug de objetos
+        if (Input.GetKeyDown(KeyCode.F2))
         {
-            Image imagenCorazon = corazones[i].GetComponent<Image>();
-            if (imagenCorazon != null)
+            if (gameManager != null)
             {
-                if (i < playerVidas.vidasActuales)
+                int objetosReales = gameManager.GetObjetosRecolectadosReales();
+                int totalQueCuentan = gameManager.GetTotalObjetosQueCuentan();
+                Debug.Log($"🔍 DEBUG OBJETOS - Recolectados: {objetosReales}/{totalQueCuentan}");
+                
+                // Mostrar qué mundos cuentan y cuáles no
+                for (int i = 0; i < gameManager.mundos.Length; i++)
                 {
-                    // Corazón lleno - color normal
-                    imagenCorazon.color = Color.white;
-                }
-                else
-                {
-                    // Corazón vacío - gris semi-transparente
-                    imagenCorazon.color = new Color(0.3f, 0.3f, 0.3f, 0.4f);
+                    bool cuenta = gameManager.mundos[i].contarEnEstadisticas;
+                    Debug.Log($"🔍 Mundo {i}: {(cuenta ? "✅ CUENTA" : "❌ NO CUENTA")}");
                 }
             }
         }
     }
-}
-public void ModoMundoFinal(bool esMundoFinal)
-{
-    if (esMundoFinal)
+
+    private void ActualizarCorazones()
     {
-        Debug.Log("🖥️ Configurando UI para MUNDO FINAL");
-        
-        // Ocultar elementos de objetos recolectados
-        if (objetosText != null) 
+        if (playerVidas == null || corazones == null) return;
+
+        for (int i = 0; i < corazones.Length; i++)
         {
-            objetosText.gameObject.SetActive(false);
-            Debug.Log("❌ Texto de objetos ocultado");
-        }
-        if (objetosTotalText != null) 
-        {
-            objetosTotalText.gameObject.SetActive(false);
-            Debug.Log("❌ Contador total ocultado");
-        }
-        
-        // Solo mostrar vidas
-        if (vidasText != null) 
-        {
-            vidasText.gameObject.SetActive(true);
-            Debug.Log("✅ Texto de vidas visible");
-        }
-        if (corazones != null) 
-        {
-            foreach (Image corazon in corazones)
+            if (corazones[i] != null)
             {
-                if (corazon != null) corazon.gameObject.SetActive(true);
+                Image imagenCorazon = corazones[i].GetComponent<Image>();
+                if (imagenCorazon != null)
+                {
+                    if (i < playerVidas.vidasActuales)
+                    {
+                        // Corazón lleno - color normal
+                        imagenCorazon.color = Color.white;
+                    }
+                    else
+                    {
+                        // Corazón vacío - gris semi-transparente
+                        imagenCorazon.color = new Color(0.3f, 0.3f, 0.3f, 0.4f);
+                    }
+                }
             }
-            Debug.Log("✅ Corazones visibles");
         }
     }
-}
+
+    public void ModoMundoFinal(bool esMundoFinal)
+    {
+        if (esMundoFinal)
+        {
+            Debug.Log("🖥️ Configurando UI para MUNDO FINAL");
+            
+            // Ocultar elementos de objetos recolectados
+            if (objetosText != null) 
+            {
+                objetosText.gameObject.SetActive(false);
+                Debug.Log("❌ Texto de objetos ocultado");
+            }
+            if (objetosTotalText != null) 
+            {
+                objetosTotalText.gameObject.SetActive(false);
+                Debug.Log("❌ Contador total ocultado");
+            }
+            
+            // Solo mostrar vidas
+            if (vidasText != null) 
+            {
+                vidasText.gameObject.SetActive(true);
+                Debug.Log("✅ Texto de vidas visible");
+            }
+            if (corazones != null) 
+            {
+                foreach (Image corazon in corazones)
+                {
+                    if (corazon != null) corazon.gameObject.SetActive(true);
+                }
+                Debug.Log("✅ Corazones visibles");
+            }
+        }
+        else
+        {
+            // ✅ NUEVO: Restaurar UI normal cuando no es mundo final
+            Debug.Log("🖥️ Restaurando UI normal");
+            
+            // Mostrar elementos basado en si hay objetos que contar
+            int totalObjetosQueCuentan = gameManager != null ? gameManager.GetTotalObjetosQueCuentan() : 0;
+            bool mostrarObjetos = totalObjetosQueCuentan > 0;
+
+            if (objetosText != null) 
+            {
+                objetosText.gameObject.SetActive(mostrarObjetos);
+                Debug.Log($"📊 UI Objetos: {mostrarObjetos} (Total que cuentan: {totalObjetosQueCuentan})");
+            }
+            if (objetosTotalText != null) 
+            {
+                objetosTotalText.gameObject.SetActive(mostrarObjetos);
+            }
+            
+            // Asegurar que vidas siempre estén visibles
+            if (vidasText != null) vidasText.gameObject.SetActive(true);
+            if (corazones != null) 
+            {
+                foreach (Image corazon in corazones)
+                {
+                    if (corazon != null) corazon.gameObject.SetActive(true);
+                }
+            }
+        }
+    }
 }
