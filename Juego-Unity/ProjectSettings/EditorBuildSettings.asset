@@ -9,6 +9,6 @@ EditorBuildSettings:
     path: Assets/Scenes/Main menu.unity
     guid: 35c77af588d8dae4484a02908f57a097
   - enabled: 1
-    path: Assets/Scenes/Juego.unity
+    path: Assets/Scenes/4 mundos elementales.unity
     guid: 9fc0d4010bbf28b4594072e72b8655ab
   m_configObjects: {}
