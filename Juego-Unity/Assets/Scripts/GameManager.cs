@@ -21,16 +21,20 @@ public class GameManager : MonoBehaviour
     
     public int objetosRecolectados = 0;
     
-    private void Start()
+   private void Start()
+{
+    // ✅ RESETEAR COLOR MANAGER al iniciar nueva partida
+    ColorCuerpoManager colorManager = FindObjectOfType<ColorCuerpoManager>();
+    if (colorManager != null)
     {
-        AsegurarTextoOculto();
-        InicializarMundosSecuenciales();
-        
-        // DEBUG INICIAL
-        Debug.Log("🎮 GAME MANAGER INICIADO");
-        Debug.Log($"📊 Total de mundos configurados: {mundos.Length}");
-        Debug.Log($"🌍 Mundo actual inicial: {mundoActual}");
+        colorManager.IniciarNuevaPartida();
     }
+
+    AsegurarTextoOculto();
+    InicializarMundosSecuenciales();
+    
+    Debug.Log("🎮 GAME MANAGER INICIADO - NUEVA PARTIDA");
+}
     
     private void AsegurarTextoOculto()
     {

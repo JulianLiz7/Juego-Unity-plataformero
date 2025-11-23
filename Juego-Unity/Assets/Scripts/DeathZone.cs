@@ -14,28 +14,31 @@ public class DeathZone : MonoBehaviour
         }
     }
 
-private void OnTriggerEnter(Collider other)
-{
-    if (other.CompareTag("Player"))
+    private void OnTriggerEnter(Collider other)
     {
-        Debug.Log("Player entró en DeathZone");
-        
-        PlayerVidas playerVidas = other.GetComponent<PlayerVidas>();
-        if (playerVidas != null)
+        if (other.CompareTag("Player"))
         {
-            // ✅ Pasar true para indicar que es muerte por caída
-            playerVidas.PerderVida(true);
-        }
-        else
-        {
-            // Fallback al sistema antiguo
+            Debug.Log("Player entró en DeathZone");
+            
+            // ✅ PRIMERO intentar con PlayerVidas (sistema nuevo)
+            PlayerVidas playerVidas = other.GetComponent<PlayerVidas>();
+            if (playerVidas != null)
+            {
+                playerVidas.PerderVida(true); // true = muerte por caída
+                return; // ✅ IMPORTANTE: Salir después de usar PlayerVidas
+            }
+            
+            // ✅ SOLO si no hay PlayerVidas, usar el sistema antiguo
             PlayerRespawn player = other.GetComponent<PlayerRespawn>();
             if (player != null)
             {
                 player.Respawn();
             }
+            else
+            {
+                // Fallback directo
+                other.transform.position = respawnPoint.position;
+            }
         }
     }
-}
-
 }

@@ -37,9 +37,10 @@ public class PlayerVidas : MonoBehaviour
         Debug.Log($"❤️ Sistema de vidas iniciado: {vidasActuales}/{vidasMaximas} vidas");
     }
 
-    public void PerderVida(bool esMuertePorCaida = false)
+public void PerderVida(bool esMuertePorCaida = false)
 {
-    if (esInvencible) return;
+    // Permitir perder vida si no es invencible, o si la muerte es por caída debe pasar siempre
+    if (esInvencible && !esMuertePorCaida) return;
 
     vidasActuales--;
     Debug.Log($"💔 Vida perdida. Vidas restantes: {vidasActuales}");
@@ -144,16 +145,6 @@ public class PlayerVidas : MonoBehaviour
             uiManager.ActualizarUI();
         }
     }
-
-    // Para muerte por caída (DeathZone)
-private void OnTriggerEnter(Collider other)
-{
-    if (other.CompareTag("DeathZone"))
-    {
-        Debug.Log("💀 Player cayó en DeathZone - Perdiendo vida");
-        PerderVida(true); // ✅ True = muerte por caída
-    }
-}
 
     // Comandos de testing
     private void Update()

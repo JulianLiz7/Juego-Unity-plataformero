@@ -180,4 +180,38 @@ public class UIManager : MonoBehaviour
         }
     }
 }
+public void ModoMundoFinal(bool esMundoFinal)
+{
+    if (esMundoFinal)
+    {
+        Debug.Log("🖥️ Configurando UI para MUNDO FINAL");
+        
+        // Ocultar elementos de objetos recolectados
+        if (objetosText != null) 
+        {
+            objetosText.gameObject.SetActive(false);
+            Debug.Log("❌ Texto de objetos ocultado");
+        }
+        if (objetosTotalText != null) 
+        {
+            objetosTotalText.gameObject.SetActive(false);
+            Debug.Log("❌ Contador total ocultado");
+        }
+        
+        // Solo mostrar vidas
+        if (vidasText != null) 
+        {
+            vidasText.gameObject.SetActive(true);
+            Debug.Log("✅ Texto de vidas visible");
+        }
+        if (corazones != null) 
+        {
+            foreach (Image corazon in corazones)
+            {
+                if (corazon != null) corazon.gameObject.SetActive(true);
+            }
+            Debug.Log("✅ Corazones visibles");
+        }
+    }
+}
 }
